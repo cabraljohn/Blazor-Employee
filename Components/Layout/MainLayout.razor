@@ -1,8 +1,8 @@
 ﻿@inherits LayoutComponentBase
 
 <div class="page">
-    <div class="sidebar">
-        <NavMenu />
+    <div class="@SidebarClass">
+        <NavMenu IsCollapsed="isCollapsed" ToggleSidebar="ToggleSidebar" />
     </div>
 
     <main>
@@ -11,6 +11,17 @@
         </article>
     </main>
 </div>
+
+@code {
+    private bool isCollapsed = false;
+
+    private string SidebarClass => isCollapsed ? "sidebar collapsed" : "sidebar";
+
+    private void ToggleSidebar()
+    {
+        isCollapsed = !isCollapsed;
+    }
+}
 
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.
