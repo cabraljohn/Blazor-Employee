@@ -1,0 +1,11 @@
+﻿@page "/"
+@inject NavigationManager NavManager
+
+<PageTitle>Redirecting...</PageTitle>
+
+@code {
+    protected override void OnInitialized()
+    {
+        NavManager.NavigateTo("/EmployeePage");
+    }
+}

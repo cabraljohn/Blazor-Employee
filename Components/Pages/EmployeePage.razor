@@ -1,0 +1,474 @@
+﻿@page "/EmployeePage"
+@using Blazor_Employee.Components.Model
+@using Microsoft.EntityFrameworkCore
+@inject IDbContextFactory<EmployeeContext> DbFactory
+@rendermode InteractiveServer
+
+<style>
+    .clean-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 12px;
+    overflow: hidden;
+    font-size: 0.9rem;
+    box-shadow: 0 2px 5.5px rgba(0, 0, 0, 0.8);
+}
+.clean-table thead th {
+    padding: 12px 16px;
+    background-color: #f8f9fa;
+    color: #495057;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    border-bottom: 2px solid #dee2e6;
+}
+.clean-table thead th:first-child {
+    border-radius: 12px 0 0 0;
+}
+.clean-table thead th:last-child {
+    border-radius: 0 12px 0 0;
+}
+.clean-table tbody tr:last-child td:first-child {
+    border-radius: 0 0 0 12px;
+}
+.clean-table tbody tr:last-child td:last-child {
+    border-radius: 0 0 12px 0;
+}
+.clean-table tbody td {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f0f0;
+    color: #333333;
+    vertical-align: middle;
+}
+.clean-table tbody tr {
+    transition: background-color 0.15s ease;
+}
+.clean-table tbody tr:hover {
+    background-color: #f5f5f5;
+}
+    .delete-btn {
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+        color: #dc3545;
+    }
+    tr:hover .delete-btn {
+        opacity: 1;
+        color: #a71d2a;
+        pointer-events: auto;
+    }
+    .edit-btn {
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+        color: #0d6efd;
+    }
+    tr:hover .edit-btn {
+        opacity: 1;
+        color: #0a58ca;
+        pointer-events: auto;
+    }
+    .add-btn {
+        position: fixed;
+        bottom: 40px;
+        right: 40px;
+        background-color: #1f4d92ff;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        z-index: 1000;
+        }
+    .add-btn:hover {
+        background-color: #146c43;
+        transform: scale(1.1);
+    }
+    .add-btn:hover {
+    background-color: #1f4d92ff;
+    transform: scale(1.1); 
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    }
+</style>
+
+<div class="container mt-4">
+    <h3 class="mb-4">Employee Directory</h3>
+
+    <button type="button" class="add-btn" @onclick="NewEmployee" title="Add New Employee">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-plus-lg" viewBox="0 0 16 16">
+        <path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2"/>
+    </svg>
+</button>
+
+    @if (employees == null)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else
+    {
+        <table class="clean-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Department</th>
+                    <th>Age</th>
+                    <th>Gender</th>
+                    <th>Email</th>
+                    <th>Contact No.</th>
+                    <th>Address</th>
+                    <th class="text-center">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var employee in employees)
+                {
+                    <tr>
+                        <td>@employee.Id</td>
+                        <td>@employee.Name</td>
+                        <td>@employee.Department</td>
+                        <td>@employee.Age</td>
+                        <td>@employee.Gender</td>
+                        <td>@employee.Email</td>
+                        <td>@employee.ContactNo</td>
+                        <td>@employee.Address</td>
+                        <td class="text-center">
+                            <button class="btn btn-link btn-sm me-2 edit-btn" @onclick="() => EditEmployee(employee.Id)">
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil" viewBox="0 0 16 16">
+                                    <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
+                                </svg>
+                            </button>
+                            <button class="btn btn-link btn-sm delete-btn" @onclick="() => ConfirmDelete(employee.Id)">
+                                <svg 
+                                    xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
+                                    <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z" />
+                                    <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z" />
+                                </svg>
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+@* Delete Confirmation Modal *@
+@if (showDeleteConfirm)
+{
+    <div class="modal fade show" style="display:block; background-color: rgba(0,0,0,0.5);" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Delete</h5>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to remove this employee?</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CancelDelete">Cancel</button>
+                    <button class="btn btn-danger" @onclick="ConfirmDeleteAction">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* Edit Modal *@
+@if (showModal && editingEmployee != null)
+{
+    <div class="modal fade show" style="display:block; background-color: rgba(0,0,0,0.5);" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Employee</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="editingEmployee" OnValidSubmit="SaveEmployee">
+                        <div class="row">
+                            <!-- Left Column -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Name</label>
+                                <InputText class="form-control" @bind-Value="editingEmployee.Name" />
+                            </div>
+
+                            <!-- Right Column -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Department</label>
+                                <InputText class="form-control" @bind-Value="editingEmployee.Department" />
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Email</label>
+                                <InputText class="form-control" @bind-Value="editingEmployee.Email" />
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Contact Number</label>
+                                <InputText class="form-control" @bind-Value="editingEmployee.ContactNo" />
+                            </div>
+
+                            <!-- Full width for Address -->
+                            <div class="col-12 mb-3">
+                                <label class="form-label">Address</label>
+                                <InputText class="form-control" @bind-Value="editingEmployee.Address" />
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Age</label>
+                                <InputNumber class="form-control" @bind-Value="editingEmployee.Age" />
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Gender</label>
+                                <InputText class="form-control" @bind-Value="editingEmployee.Gender" />
+                            </div>
+                        </div>
+
+                        <div class="modal-footer px-0 pb-0">
+                            <button type="button" class="btn btn-secondary" @onclick="CloseModal">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* Add Modal *@
+@if (isAddingNew && addingEmployee != null)
+{
+    <div class="modal fade show" style="display:block; background-color: rgba(0,0,0,0.5);" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Employee</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body">
+    <EditForm Model="addingEmployee" OnValidSubmit="AddNewEmployee">
+        <div class="row">
+            <!-- Left Column -->
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Name</label>
+                <InputText class="form-control" @bind-Value="addingEmployee.Name" />
+            </div>
+
+            <!-- Right Column -->
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Department</label>
+                <InputSelect class="form-control" @bind-Value="addingEmployee.Department">
+                    <option value="" disabled selected hidden>Select Department</option>
+                    <option value="IT Department">IT Department</option>
+                    <option value="HR Department">HR Department</option>
+                    <option value="Finance Department">Finance Department</option>
+                    <option value="Marketing Department">Marketing Department</option>
+                    <option value="Sales Department">Sales Department</option>
+                    <option value="Operations Department">Operations Department</option>
+                    <option value="Customer Service Department">Customer Service Department</option>
+                    <option value="Research and Development Department">Research and Development Department</option>
+                    <option value="Legal Department">Legal Department</option>
+                </InputSelect>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Email</label>
+                <InputText class="form-control" @bind-Value="addingEmployee.Email" />
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Contact Number</label>
+                <InputText class="form-control" @bind-Value="addingEmployee.ContactNo" />
+            </div>
+
+            <!-- Full width for Address since it's usually longer -->
+            <div class="col-12 mb-3">
+                <label class="form-label">Address</label>
+                <InputText class="form-control" @bind-Value="addingEmployee.Address" />
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Age</label>
+                <InputNumber class="form-control" @bind-Value="addingEmployee.Age" />
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Gender</label>
+                <InputSelect class="form-control" @bind-Value="addingEmployee.Gender">
+                    <option value="" disabled selected hidden>Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                </InputSelect>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(addErrorMessage))
+        {
+            <div class="alert alert-danger py-2">@addErrorMessage</div>
+        }
+
+        <div class="modal-footer px-0 pb-0">
+            <button type="button" class="btn btn-secondary" @onclick="CloseModal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Add Employee</button>
+        </div>
+    </EditForm>
+</div>
+
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<Employee> employees = new();
+    private bool showModal = false;
+    private bool isAddingNew = false;
+    private Employee? editingEmployee;
+    private Employee? addingEmployee;
+    private string addErrorMessage = string.Empty;
+    private bool showDeleteConfirm = false;
+    private int employeeToDeleteId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadEmployees();
+    }
+
+    private async Task LoadEmployees()
+    {
+        try
+        {
+            using var context = await DbFactory.CreateDbContextAsync();
+
+            // Ensure the database is created (especially useful for LocalDB)
+            await context.Database.EnsureCreatedAsync();
+
+            // Use AsNoTracking() for faster, read-only performance
+            employees = await context.Employees.AsNoTracking().ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            // Simple console log for debugging
+            Console.WriteLine($"Error loading employees: {ex.Message}");
+            employees = new List<Employee>();
+        }
+    }
+
+    public void EditEmployee(int id)
+    {
+        // We find the employee in the local list
+        var emp = employees.FirstOrDefault(e => e.Id == id);
+        if (emp != null)
+        {
+            // We create a copy so the UI doesn't update the table until we hit "Save"
+            editingEmployee = new Employee
+            {
+                Id = emp.Id,
+                Name = emp.Name,
+                Email = emp.Email,
+                Address = emp.Address,
+                Age = emp.Age,
+                Gender = emp.Gender,
+                Department = emp.Department,
+                ContactNo = emp.ContactNo
+            };
+            showModal = true;
+        }
+    }
+
+    private async Task SaveEmployee()
+    {
+        if (editingEmployee != null)
+        {
+            using var context = await DbFactory.CreateDbContextAsync();
+            context.Employees.Update(editingEmployee);
+            await context.SaveChangesAsync();
+
+            showModal = false;
+            await LoadEmployees(); // Refresh the list from the database
+        }
+    }
+
+    public async Task DeleteEmployee(int id)
+    {
+        using var context = await DbFactory.CreateDbContextAsync();
+        var employeeToDelete = await context.Employees.FindAsync(id);
+        if (employeeToDelete != null)
+        {
+            context.Employees.Remove(employeeToDelete);
+            await context.SaveChangesAsync();
+            await LoadEmployees(); // Refresh UI
+        }
+    }
+    private void ConfirmDelete(int id)
+    {
+        employeeToDeleteId = id;
+        showDeleteConfirm = true;
+    }
+
+    private void CancelDelete()
+    {
+        showDeleteConfirm = false;
+        employeeToDeleteId = 0;
+    }
+
+    private async Task ConfirmDeleteAction()
+    {
+        showDeleteConfirm = false;
+        if (employeeToDeleteId != 0)
+        {
+            await DeleteEmployee(employeeToDeleteId);
+            employeeToDeleteId = 0;
+        }
+    }   
+
+    public void NewEmployee()
+    {
+        addingEmployee = new Employee();
+        isAddingNew = true;
+    }
+
+    public async Task AddNewEmployee()
+    {
+        if (addingEmployee == null) return;
+
+        // Validate all required fields
+        if (string.IsNullOrWhiteSpace(addingEmployee.Name) ||
+            string.IsNullOrWhiteSpace(addingEmployee.Address) ||
+            string.IsNullOrWhiteSpace(addingEmployee.Department) ||
+            string.IsNullOrWhiteSpace(addingEmployee.Gender) ||
+            string.IsNullOrWhiteSpace(addingEmployee.Email) ||
+            string.IsNullOrWhiteSpace(addingEmployee.ContactNo) ||
+            addingEmployee.Age <= 0)
+        {
+            addErrorMessage = "Please fill in all fields and enter a valid age (greater than 0).";           
+            return;
+        }
+
+        addErrorMessage = string.Empty;
+        using var context = await DbFactory.CreateDbContextAsync();
+        context.Employees.Add(addingEmployee);
+        await context.SaveChangesAsync();
+        isAddingNew = false;
+        await LoadEmployees();
+    }
+
+    private void CloseModal()
+    {
+        showModal = false;
+        isAddingNew = false;
+        editingEmployee = null;
+        addingEmployee = null;
+        addErrorMessage = string.Empty;
+    }
+}
